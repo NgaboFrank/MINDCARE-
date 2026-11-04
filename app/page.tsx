@@ -108,10 +108,10 @@ export default function Page() {
         </nav>}
       </header>
       <div className="mx-auto max-w-5xl px-4 pb-16 pt-9 sm:px-6 sm:pt-12">
-        <section className="rounded-3xl border border-[#0d4a8a] bg-[#0d4a8a] px-6 py-9 text-white sm:px-10">
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t.welcome}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/85 sm:text-base">{t.intro}</p>
-          <button onClick={() => navigate("checkin")} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#0d4a8a] hover:bg-[#e8f1fb]">{t.checkin}<ArrowRight size={17}/></button>
+        <section className="rounded-3xl border border-[#0d4a8a] bg-[#0d4a8a] px-6 py-5 text-white sm:px-10 sm:py-6">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t.welcome}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/85">{t.intro}</p>
+          <button onClick={() => navigate("checkin")} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#0d4a8a] hover:bg-[#e8f1fb]">{t.checkin}<ArrowRight size={17}/></button>
         </section>
         <section id="screenings" className="mt-6 scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
           <h2 className="text-xl font-bold">{language==="FR"?"Dépistage des symptômes":"Symptom screening"}</h2>
