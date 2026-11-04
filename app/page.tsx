@@ -85,20 +85,20 @@ export default function Page() {
 
   return (
     <main id="home" className="min-h-screen bg-[#f7fafb] text-[#17324a]">
-      <header className="sticky top-0 z-20 border-b border-[#e0eaed] bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-[#0d4a8a] bg-[#0d4a8a] text-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
-          <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-[#0d8fa5] text-white"><HeartPulse size={19} /></span>mindcare<span className="-ml-2 text-[#0d8fa5]">.</span></a>
-          <nav className="hidden items-center gap-6 text-sm font-semibold text-[#5b7380] sm:flex" aria-label="Main navigation">
-            <button onClick={() => navigate("home")} className="hover:text-[#0d8fa5]">{t.home}</button>
-            <button onClick={() => navigate("checkin")} className="hover:text-[#0d8fa5]">{t.assessment}</button>
-            <button onClick={() => navigate("ask")} className="hover:text-[#0d8fa5]">{t.help}</button>
+          <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-white/15 text-white"><HeartPulse size={19} /></span>mindcare<span className="-ml-2 text-white">.</span></a>
+          <nav className="hidden items-center gap-6 text-sm font-semibold text-white/85 sm:flex" aria-label="Main navigation">
+            <button onClick={() => navigate("home")} className="hover:text-white">{t.home}</button>
+            <button onClick={() => navigate("checkin")} className="hover:text-white">{t.assessment}</button>
+            <button onClick={() => navigate("ask")} className="hover:text-white">{t.help}</button>
           </nav>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={switchLanguage} aria-label={t.language} className="flex items-center gap-2 rounded-lg border border-[#dfe9ee] px-3 py-2 text-sm font-bold hover:bg-[#edf8f9]"><Globe2 size={16}/>{language} / {language === "EN" ? "FR" : "EN"}</button>
+            <button type="button" onClick={switchLanguage} aria-label={t.language} className="flex items-center gap-2 rounded-lg border border-white/35 px-3 py-2 text-sm font-bold text-white hover:bg-white/15"><Globe2 size={16}/>{language} / {language === "EN" ? "FR" : "EN"}</button>
             <button type="button" className="rounded-lg p-2 sm:hidden" aria-label={menuOpen ? t.close : t.menu} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
           </div>
         </div>
-        {menuOpen && <nav className="flex flex-col gap-1 border-t border-[#e0eaed] bg-white px-4 py-3 sm:hidden"><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("home")}>{t.home}</button><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("checkin")}>{t.assessment}</button><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("ask")}>{t.help}</button></nav>}
+        {menuOpen && <nav className="flex flex-col gap-1 border-t border-white/20 bg-[#0d4a8a] px-4 py-3 text-white sm:hidden"><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("home")}>{t.home}</button><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("checkin")}>{t.assessment}</button><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("ask")}>{t.help}</button></nav>}
       </header>
       <div className="mx-auto max-w-5xl px-4 pb-16 pt-9 sm:px-6 sm:pt-12">
         <section className="rounded-3xl border border-[#dcebed] bg-white px-6 py-9 sm:px-10">
