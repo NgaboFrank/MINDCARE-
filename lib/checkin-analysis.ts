@@ -38,6 +38,18 @@ export function analyzeCheckin(answers: number[], language: Language) {
   : concern==="some"
   ? (language==="FR"?"Vos réponses suggèrent des difficultés occasionnelles. Choisissez une action simple ci-dessous et voyez si elle vous aide dans les prochains jours. Demandez un avis professionnel si les difficultés persistent, s’aggravent ou vous préoccupent.":"Your answers suggest occasional difficulties. Choose one simple action below and see whether it helps over the coming days. Seek professional advice if problems persist, worsen, or concern you.")
   : (language==="FR"?"Vous avez signalé peu de difficultés. Continuez les habitudes qui favorisent votre bien-être. Si quelque chose vous préoccupe malgré ce résultat, demandez conseil à un professionnel.":"You reported few difficulties. Continue the habits that support your wellbeing. If something still concerns you despite this result, seek professional advice.")
+ const pairKey = [main[0]?.id,main[1]?.id].filter(Boolean).sort().join("|")
+ const pairInsights:Record<string,Record<Language,string>> = {
+  "focus|worry":{EN:"Worry can make it harder to focus. Writing down one concern before starting a short task may help.",FR:"Les inquiétudes peuvent rendre la concentration difficile. Noter une préoccupation avant une courte tâche peut aider."},
+  "energy|sleep":{EN:"Sleep difficulties and tiredness can affect each other. A regular sleep routine may help, although persistent fatigue can have other causes.",FR:"Les difficultés de sommeil et la fatigue peuvent s’influencer. Une routine régulière peut aider, mais une fatigue persistante peut avoir d’autres causes."},
+  "mood|support":{EN:"Feeling disconnected can make low mood harder to manage. Consider reaching out to a trusted person.",FR:"L’isolement peut compliquer la gestion d’une baisse de moral. Pensez à contacter une personne de confiance."},
+  "sleep|stress":{EN:"Stress may affect sleep. A calmer evening routine and a short plan for tomorrow may help.",FR:"Le stress peut perturber le sommeil. Une routine calme le soir et un petit plan pour demain peuvent aider."},
+  "energy|mood":{EN:"Low mood and low energy may occur together. Start with a small, manageable activity rather than expecting a full change at once.",FR:"Une baisse de moral et d’énergie peuvent survenir ensemble. Commencez par une petite activité réalisable."}
+ }
+ const insight=pairInsights[pairKey]?.[language] ?? (main.length>=2 ? (language==="FR"?"Plusieurs difficultés ont été signalées. Elles peuvent parfois s’influencer, mais ce questionnaire ne permet pas d’en déterminer la cause.":"You reported more than one difficulty. They may influence one another, but this check-in cannot establish their cause.") : main.length===1 ? (language==="FR"?"Cette difficulté mérite votre attention, surtout si elle persiste.":"This concern is worth paying attention to, especially if it continues.") : (language==="FR"?"Vous n’avez signalé aucune difficulté dans ces questions.":"You did not report difficulties on these questions."))
+ const actionPlan=main.length ? [...new Set(main.map(item=>item.advice[language]))].slice(0,3) : [language==="FR"?"Continuez les routines de sommeil et de repos qui vous conviennent.":"Continue the sleep and rest routines that work for you.",language==="FR"?"Restez en contact avec des personnes de confiance.":"Stay connected with people you trust."]
+ const followup=concern==="elevated" ? (language==="FR"?"Prenez contact avec un professionnel de santé prochainement, surtout si vos activités quotidiennes sont perturbées. Si vous avez besoin d’une aide immédiate, contactez les services d’urgence locaux ou une personne de confiance.":"Arrange a professional assessment soon, especially if daily activities are affected. If you need immediate help, contact local emergency services or a trusted person.") : (language==="FR"?"Refaites le point dans environ deux semaines, ou plus tôt si les difficultés s’aggravent. Si elles persistent ou perturbent votre quotidien, demandez un avis professionnel.":"Check in with yourself again in about two weeks, or sooner if things worsen. Seek professional advice if concerns persist or affect daily life.")
+ const finalConclusion=main.length ? (language==="FR"?`Vos réponses indiquent surtout : ${keyAreas}. ${recommendation}`:`Your answers mainly highlight: ${keyAreas}. ${recommendation}`) : recommendation
  const finalHeading=language==="FR"?"Votre conseil final personnalisé":"Your personalized final advice"
  const nextStep=language==="FR"?"Votre prochaine étape":"Your next step"
 
@@ -47,6 +59,10 @@ export function analyzeCheckin(answers: number[], language: Language) {
   explanation,
   careLevel,
   finalAdvice,
+  finalConclusion,
+  insight,
+  actionPlan,
+  followup,
   finalHeading,
   nextStep,
   actionList,
