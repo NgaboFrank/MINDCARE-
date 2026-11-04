@@ -113,7 +113,6 @@ export default function Page() {
       </header>
       <div className="mx-auto max-w-5xl px-4 pb-16 pt-9 sm:px-6 sm:pt-12">
         <section className="rounded-3xl border border-[#dcebed] bg-white px-6 py-9 sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[.15em] text-[#0d8fa5]">{t.dashboard}</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t.welcome}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[#637d8a] sm:text-base">{t.intro}</p>
           <button onClick={() => navigate("checkin")} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0d8fa5] px-5 py-3 text-sm font-bold text-white hover:bg-[#087f95]">{t.checkin}<ArrowRight size={17}/></button>
