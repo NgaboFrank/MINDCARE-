@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { analyzeCheckin } from "@/lib/checkin-analysis"
 import { screeners, frequencyOptions, scoreScreener, type ScreenId } from "@/lib/clinical-screeners"
-import { ArrowRight, CheckCircle2, ChevronDown, Check, HeartPulse, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
+import { ArrowRight, CheckCircle2, ChevronDown, Check, HeartPulse, ClipboardList, Brain, MessageCircle, Home, ShieldCheck as ShieldIcon, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
 
 type Language = "EN" | "FR"
 const translations = {
@@ -96,10 +96,20 @@ export default function Page() {
           </nav>
           <div className="flex items-center gap-2">
             <div className="relative"><button type="button" aria-label={t.language} aria-expanded={languageOpen} aria-haspopup="menu" onClick={() => setLanguageOpen(!languageOpen)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-white hover:bg-white/15">{language}<ChevronDown size={15} className={`transition-transform ${languageOpen?"rotate-180":""}`}/></button>{languageOpen && <div role="menu" aria-label={t.language} className="absolute right-0 top-full z-40 mt-2 w-40 overflow-hidden rounded-xl border border-[#dce5ee] bg-white py-1 text-[#34465b] shadow-xl">{(["EN","FR"] as Language[]).map(code=><button type="button" role="menuitemradio" aria-checked={language===code} key={code} onClick={()=>chooseLanguage(code)} className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold hover:bg-[#edf4fb] ${language===code?"bg-[#e8f1fb] text-[#0d4a8a]":""}`}>{code==="EN"?"English":"Français"}{language===code && <Check size={16}/>}</button>)}</div>}</div>
-            <button type="button" className="rounded-lg p-2 sm:hidden" aria-label={menuOpen ? t.close : t.menu} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
+            <button type="button" className="rounded-lg p-2 text-white hover:bg-white/15" aria-label={menuOpen ? t.close : t.menu} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
           </div>
         </div>
-        {menuOpen && <nav className="flex flex-col gap-1 border-t border-white/20 bg-[#0d4a8a] px-4 py-3 text-white sm:hidden"><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("home")}>{t.home}</button><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("checkin")}>{t.assessment}</button><button className="rounded-lg px-3 py-2 text-left" onClick={() => navigate("ask")}>{t.help}</button></nav>}
+        {menuOpen && <nav aria-label={language==="FR"?"Menu MindCare":"MindCare menu"} className="absolute right-4 top-[60px] z-40 w-[min(290px,calc(100vw-32px))] overflow-hidden rounded-xl border border-white/15 bg-[#103e70] p-2 text-white shadow-2xl sm:right-6">
+          {([
+            {id:"home",en:"Home",fr:"Accueil",Icon:Home},
+            {id:"checkin",en:"Quick check-in",fr:"Bilan rapide",Icon:ClipboardList},
+            {id:"screenings",en:"PHQ-8 & GAD-7 screening",fr:"Dépistage PHQ-8 et GAD-7",Icon:Brain},
+            {id:"ask",en:"Ask MindCare",fr:"Demander à MindCare",Icon:MessageCircle},
+            {id:"privacy",en:"Privacy information",fr:"Confidentialité",Icon:ShieldIcon}
+          ]).map(item=><button key={item.id} onClick={()=>navigate(item.id)} className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10"><item.Icon size={17}/>{language==="FR"?item.fr:item.en}</button>)}
+          <div className="my-1 border-t border-white/15"/>
+          <p className="px-4 py-2 text-xs leading-5 text-white/70">{language==="FR"?"Les bilans ne remplacent pas un diagnostic médical.":"Screenings do not replace a medical diagnosis."}</p>
+        </nav>}
       </header>
       <div className="mx-auto max-w-5xl px-4 pb-16 pt-9 sm:px-6 sm:pt-12">
         <section className="rounded-3xl border border-[#dcebed] bg-white px-6 py-9 sm:px-10">
@@ -151,7 +161,7 @@ export default function Page() {
             <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder={t.placeholder} className="mt-5 min-h-32 w-full resize-y rounded-xl border border-[#dcebed] bg-[#fbfdfd] p-4 text-sm outline-none focus:border-[#0d8fa5]" />
             <button disabled={!prompt.trim() || asking} onClick={askMindCare} className="mt-3 w-full rounded-xl bg-[#17324a] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{asking ? (language === "FR" ? "Réponse en cours…" : "Thinking…") : t.ask}</button>
             {askError && <p role="alert" className="mt-3 text-sm text-red-700">{askError}</p>}{answer && <div className="mt-5 rounded-xl border border-[#dcebed] bg-[#f3fafb] p-4" aria-live="polite"><p className="whitespace-pre-wrap text-sm leading-6 text-[#607883]">{answer}</p></div>}
-            <div className="mt-6 flex items-start gap-3 rounded-xl bg-[#f3f8f9] p-4"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-[#0d8fa5]"/><div><p className="text-sm font-bold">{t.privacy}</p><p className="mt-1 text-xs leading-5 text-[#6b8490]">{t.privacyInfo}</p></div></div>
+            <div id="privacy" className="mt-6 flex scroll-mt-24 items-start gap-3 rounded-xl bg-[#f3f8f9] p-4"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-[#0d8fa5]"/><div><p className="text-sm font-bold">{t.privacy}</p><p className="mt-1 text-xs leading-5 text-[#6b8490]">{t.privacyInfo}</p></div></div>
           </section>
         </div>
       </div>
