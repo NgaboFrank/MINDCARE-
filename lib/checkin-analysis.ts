@@ -18,13 +18,23 @@ export function analyzeCheckin(answers: number[], language: Language) {
  const frequency = (score:number)=> language==="FR" ? ["Jamais","Parfois","Souvent","Presque tous les jours"][score] : ["Never","Sometimes","Often","Almost every day"][score]
  const impact = answers[7]
  const frequent = answers.filter(value=>value>=2).length
- const recommendation = impact>=2 || frequent>=3
-   ? (language==="FR" ? "Plusieurs difficultés ou un impact sur le quotidien ont été signalés. Envisagez de prendre rendez-vous avec un professionnel qualifié." : "Several frequent difficulties or an impact on daily life were reported. Consider arranging an appointment with a qualified professional.")
-   : notable.length ? (language==="FR" ? "Quelques difficultés ont été signalées. Essayez les conseils ci-dessous et demandez de l’aide si elles persistent ou s’aggravent." : "You reported some difficulties. Try the suggestions below and seek support if they persist or worsen.")
-   : (language==="FR" ? "Vous avez signalé peu de difficultés pendant cette période. Continuez les habitudes qui vous aident à vous sentir bien." : "You reported few difficulties during this period. Keep up the habits that support your wellbeing.")
+ const topLabel = (id:string) => topics.find(t=>t.id===id)?.label[language] ?? id
+ const keyAreas = main.map(x=>topLabel(x.id)).join(", ")
+ const concern = impact>=2 || frequent>=4 ? "elevated" : frequent>=2 || impact===1 ? "notable" : notable.length ? "some" : "few"
+ const recommendations:Record<string,Record<Language,string>> = {
+ elevated:{EN:"Your answers show several frequent difficulties or significant disruption to everyday activities. Arrange an assessment with a qualified healthcare professional. If you feel unable to manage daily activities, seek support promptly.",FR:"Vos réponses indiquent plusieurs difficultés fréquentes ou un impact important sur le quotidien. Prenez rendez-vous avec un professionnel de santé qualifié. Si vous n’arrivez plus à gérer vos activités, demandez rapidement de l’aide."},
+ notable:{EN:"Some difficulties are affecting your wellbeing. Try the suggestions for your most reported concerns below. Consider professional support, especially if these difficulties persist, increase, or interfere with everyday life.",FR:"Certaines difficultés affectent votre bien-être. Essayez les conseils adaptés ci-dessous. Envisagez un soutien professionnel, surtout si elles persistent, s’aggravent ou perturbent votre quotidien."},
+ some:{EN:"You reported occasional difficulties. Choose one practical suggestion below and check how you feel over the coming days. You can seek professional advice at any time if concerned.",FR:"Vous avez signalé des difficultés occasionnelles. Choisissez un conseil pratique ci-dessous et observez comment vous vous sentez dans les prochains jours. Vous pouvez demander conseil à tout moment."},
+ few:{EN:"You reported few difficulties over the past two weeks. Continue routines that support your wellbeing. A low score cannot rule out a health concern.",FR:"Vous avez signalé peu de difficultés au cours des deux dernières semaines. Continuez les habitudes favorables à votre bien-être. Un faible score n’exclut pas un problème de santé."}
+ }
+ const recommendation=recommendations[concern][language]
+ const explanation=main.length ? (language==="FR" ? `Les réponses les plus marquées concernent : ${keyAreas}. Les conseils ci-dessous correspondent à ces réponses.` : `Your most reported areas were: ${keyAreas}. The suggestions below are selected from those answers.`) : (language==="FR"?"Aucune difficulté n’a été signalée dans ce questionnaire.":"No difficulties were reported in this check-in.")
+ const careLevel=concern==="elevated"?"recommended":concern==="notable"?"consider":"optional"
  return {
   title: language==="FR" ? "Résumé personnalisé de vos réponses" : "Your personalized response summary",
   recommendation,
+  explanation,
+  careLevel,
   details: main.map(item=>({id:item.id,label:item.label[language],frequency:frequency(item.score),advice:item.advice[language],followup:item.followup[language]})),
   noConcerns: notable.length===0,
   notice: language==="FR" ? "Ce questionnaire informel n’est pas un outil clinique validé. Il ne permet pas de diagnostiquer une maladie ni de mesurer un niveau de risque médical." : "This informal questionnaire is not a validated clinical tool. It cannot diagnose a condition or determine a medical risk level."
