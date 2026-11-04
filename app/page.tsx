@@ -88,7 +88,7 @@ export default function Page() {
     <main id="home" className="min-h-screen bg-[#f7fafb] text-[#17324a]">
       <header className="sticky top-0 z-20 border-b border-[#0d4a8a] bg-[#0d4a8a] text-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
-          <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-white/15 text-white"><HeartPulse size={19} /></span>mindcare<span className="-ml-2 text-white">.</span></a>
+          <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight">mindcare<span className="-ml-2 text-white">.</span></a>
           <nav className="hidden items-center gap-6 text-sm font-semibold text-white/85 sm:flex" aria-label="Main navigation">
             <button onClick={() => navigate("home")} className="hover:text-white">{t.home}</button>
             <button onClick={() => navigate("checkin")} className="hover:text-white">{t.assessment}</button>
