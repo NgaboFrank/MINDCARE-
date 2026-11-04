@@ -116,7 +116,7 @@ export default function Page() {
         <section id="screenings" className="mt-6 scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
           <h2 className="text-xl font-bold">{language==="FR"?"Dépistage des symptômes":"Symptom screening"}</h2>
           <p className="mt-2 text-sm leading-6 text-[#6b8490]">{language==="FR"?"Choisissez un questionnaire. Les résultats apparaissent immédiatement et ne constituent pas un diagnostic.":"Choose a questionnaire. Results appear immediately and are not a diagnosis."}</p>
-          <div className="mt-4 flex flex-wrap gap-2">{(["phq8","gad7"] as ScreenId[]).map(id=><button key={id} onClick={()=>startScreen(id)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${screenId===id?"border-[#0d8fa5] bg-[#e9f8fa]":"border-[#dcebed]"}`}>{screeners[id].title[language]}</button>)}</div>
+          <div className="mt-4 flex flex-wrap gap-2">{(["phq8","gad7"] as ScreenId[]).map(id=><button key={id} onClick={()=>startScreen(id)} className={`rounded-xl border border-[#0d4a8a] bg-[#0d4a8a] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#103e70] ${screenId===id?"ring-2 ring-[#8db9e5] ring-offset-2":""}`}>{screeners[id].title[language]}</button>)}</div>
           {screenId && !screenDone && <div className="mt-5 rounded-xl border border-[#dcebed] p-4">
             <p className="text-xs font-semibold text-[#647d88]">{screeners[screenId].description[language]}</p>
             <p className="mt-4 text-xs font-semibold">{screenStep+1} / {screeners[screenId].questions.length}</p>
