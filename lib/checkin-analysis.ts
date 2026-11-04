@@ -30,11 +30,26 @@ export function analyzeCheckin(answers: number[], language: Language) {
  const recommendation=recommendations[concern][language]
  const explanation=main.length ? (language==="FR" ? `Les réponses les plus marquées concernent : ${keyAreas}. Les conseils ci-dessous correspondent à ces réponses.` : `Your most reported areas were: ${keyAreas}. The suggestions below are selected from those answers.`) : (language==="FR"?"Aucune difficulté n’a été signalée dans ce questionnaire.":"No difficulties were reported in this check-in.")
  const careLevel=concern==="elevated"?"recommended":concern==="notable"?"consider":"optional"
+ const actionList=main.map(item=>item.advice[language])
+ const finalAdvice = concern==="elevated"
+  ? (language==="FR"?"Vos réponses montrent plusieurs difficultés fréquentes ou un impact important sur votre quotidien. La meilleure prochaine étape est de prendre rendez-vous avec un professionnel de santé qualifié pour une évaluation. En attendant, commencez par une petite action adaptée à votre principale difficulté.":"Your answers show frequent difficulties or a meaningful impact on daily life. Your best next step is to arrange an assessment with a qualified healthcare professional. Meanwhile, start with one manageable action for your main concern.")
+  : concern==="notable"
+  ? (language==="FR"?"Commencez par les conseils pratiques ci-dessous, en priorité pour les difficultés que vous avez le plus signalées. Si elles persistent, s’aggravent ou perturbent votre quotidien, prenez rendez-vous avec un professionnel de santé.":"Start with the practical steps below, focusing on your most reported difficulties. If they persist, worsen, or affect daily life, arrange an appointment with a qualified healthcare professional.")
+  : concern==="some"
+  ? (language==="FR"?"Vos réponses suggèrent des difficultés occasionnelles. Choisissez une action simple ci-dessous et voyez si elle vous aide dans les prochains jours. Demandez un avis professionnel si les difficultés persistent, s’aggravent ou vous préoccupent.":"Your answers suggest occasional difficulties. Choose one simple action below and see whether it helps over the coming days. Seek professional advice if problems persist, worsen, or concern you.")
+  : (language==="FR"?"Vous avez signalé peu de difficultés. Continuez les habitudes qui favorisent votre bien-être. Si quelque chose vous préoccupe malgré ce résultat, demandez conseil à un professionnel.":"You reported few difficulties. Continue the habits that support your wellbeing. If something still concerns you despite this result, seek professional advice.")
+ const finalHeading=language==="FR"?"Votre conseil final personnalisé":"Your personalized final advice"
+ const nextStep=language==="FR"?"Votre prochaine étape":"Your next step"
+
  return {
   title: language==="FR" ? "Résumé personnalisé de vos réponses" : "Your personalized response summary",
   recommendation,
   explanation,
   careLevel,
+  finalAdvice,
+  finalHeading,
+  nextStep,
+  actionList,
   details: main.map(item=>({id:item.id,label:item.label[language],frequency:frequency(item.score),advice:item.advice[language],followup:item.followup[language]})),
   noConcerns: notable.length===0,
   notice: language==="FR" ? "Ce questionnaire informel n’est pas un outil clinique validé. Il ne permet pas de diagnostiquer une maladie ni de mesurer un niveau de risque médical." : "This informal questionnaire is not a validated clinical tool. It cannot diagnose a condition or determine a medical risk level."
