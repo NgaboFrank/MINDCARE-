@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { analyzeCheckin } from "@/lib/checkin-analysis"
 import { screeners, frequencyOptions, scoreScreener, type ScreenId } from "@/lib/clinical-screeners"
-import { ArrowRight, CheckCircle2, Globe2, HeartPulse, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
+import { ArrowRight, CheckCircle2, ChevronDown, Check, HeartPulse, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
 
 type Language = "EN" | "FR"
 const translations = {
@@ -32,6 +32,7 @@ const translations = {
 export default function Page() {
   const [language, setLanguage] = useState<Language>("EN")
   const [menuOpen, setMenuOpen] = useState(false)
+  const [languageOpen, setLanguageOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [completed, setCompleted] = useState(false)
@@ -66,9 +67,9 @@ export default function Page() {
     const saved = window.localStorage.getItem("mindcare-language")
     if (saved === "EN" || saved === "FR") setLanguage(saved)
   }, [])
-  function switchLanguage() {
-    const next = language === "EN" ? "FR" : "EN"
+  function chooseLanguage(next: Language) {
     setLanguage(next)
+    setLanguageOpen(false)
     window.localStorage.setItem("mindcare-language", next)
   }
   function navigate(id: string) {
@@ -94,7 +95,7 @@ export default function Page() {
             <button onClick={() => navigate("ask")} className="hover:text-white">{t.help}</button>
           </nav>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={switchLanguage} aria-label={t.language} className="flex items-center gap-2 rounded-lg border border-white/35 px-3 py-2 text-sm font-bold text-white hover:bg-white/15"><Globe2 size={16}/>{language} / {language === "EN" ? "FR" : "EN"}</button>
+            <div className="relative"><button type="button" aria-label={t.language} aria-expanded={languageOpen} aria-haspopup="menu" onClick={() => setLanguageOpen(!languageOpen)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-white hover:bg-white/15">{language}<ChevronDown size={15} className={`transition-transform ${languageOpen?"rotate-180":""}`}/></button>{languageOpen && <div role="menu" aria-label={t.language} className="absolute right-0 top-full z-40 mt-2 w-40 overflow-hidden rounded-xl border border-[#dce5ee] bg-white py-1 text-[#34465b] shadow-xl">{(["EN","FR"] as Language[]).map(code=><button type="button" role="menuitemradio" aria-checked={language===code} key={code} onClick={()=>chooseLanguage(code)} className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold hover:bg-[#edf4fb] ${language===code?"bg-[#e8f1fb] text-[#0d4a8a]":""}`}>{code==="EN"?"English":"Français"}{language===code && <Check size={16}/>}</button>)}</div>}</div>
             <button type="button" className="rounded-lg p-2 sm:hidden" aria-label={menuOpen ? t.close : t.menu} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
           </div>
         </div>
