@@ -7,23 +7,23 @@ type Language = "EN" | "FR"
 const translations = {
   EN: {
     dashboard: "Dashboard", welcome: "Welcome to MindCare", intro: "Take a moment to check in with yourself. You can start with a short check-in or ask a wellbeing question.",
-    checkin: "Quick check-in", checkinInfo: "Three simple questions. Choose the answer that feels right for you.",
-    question: ["How have you been feeling most days this week?", "How easy has it been to focus on everyday tasks?", "How supported do you feel right now?"],
-    choices: ["Not at all", "Several days", "More than half the days", "Nearly every day"],
+    checkin: "Quick check-in", checkinInfo: "Eight short questions about the past two weeks. Choose what best describes your experience.",
+    question: ["How often have you felt down or lost interest in activities?", "How often have worries been difficult to manage?", "How often has stress affected your daily routine?", "How often have you had difficulty sleeping?", "How often have you found it difficult to concentrate?", "How often have you felt isolated or unsupported?", "How often have you felt unusually tired?", "How often have your feelings interfered with school, work, or relationships?"],
+    choices: ["Never", "Sometimes", "Often", "Almost every day"],
     next: "Next question", finish: "Finish check-in", back: "Back", complete: "Check-in complete", completeInfo: "Thank you for taking a moment to reflect. Your answers are not a diagnosis.",
     again: "Start again", step: "Question", of: "of", guidance: "Ask MindCare", guidanceInfo: "Have a wellbeing question? Get general guidance, not a medical diagnosis.",
     placeholder: "Type your question here...", ask: "Get guidance", privacy: "Your privacy matters", privacyInfo: "Avoid sharing identifying or sensitive personal information in this question box.",
-    note: "This check-in is for reflection only. Answers are not saved to a patient account.", menu: "Open menu", close: "Close menu", language: "Switch language", home: "Home", assessment: "Check-in", help: "Ask MindCare",
+    note: "This is an informal, non-validated wellbeing check-in, not a clinical screening or diagnosis. Your answers are not saved to an account.", menu: "Open menu", close: "Close menu", language: "Switch language", home: "Home", assessment: "Check-in", help: "Ask MindCare",
   },
   FR: {
     dashboard: "Tableau de bord", welcome: "Bienvenue sur MindCare", intro: "Prenez un moment pour faire le point. Commencez par un court bilan ou posez une question sur le bien-être.",
-    checkin: "Bilan rapide", checkinInfo: "Trois questions simples. Choisissez la réponse qui vous correspond.",
-    question: ["Comment vous êtes-vous senti(e) la plupart des jours cette semaine ?", "Avez-vous réussi à vous concentrer sur vos tâches quotidiennes ?", "Vous sentez-vous soutenu(e) en ce moment ?"],
-    choices: ["Pas du tout", "Plusieurs jours", "Plus de la moitié des jours", "Presque tous les jours"],
+    checkin: "Bilan rapide", checkinInfo: "Huit questions courtes sur les deux dernières semaines. Choisissez ce qui vous correspond.",
+    question: ["À quelle fréquence vous êtes-vous senti(e) triste ou avez-vous perdu tout intérêt ?", "À quelle fréquence vos inquiétudes ont-elles été difficiles à gérer ?", "À quelle fréquence le stress a-t-il perturbé votre quotidien ?", "À quelle fréquence avez-vous eu du mal à dormir ?", "À quelle fréquence avez-vous eu du mal à vous concentrer ?", "À quelle fréquence vous êtes-vous senti(e) isolé(e) ou sans soutien ?", "À quelle fréquence vous êtes-vous senti(e) anormalement fatigué(e) ?", "À quelle fréquence vos émotions ont-elles perturbé vos études, votre travail ou vos relations ?"],
+    choices: ["Jamais", "Parfois", "Souvent", "Presque tous les jours"],
     next: "Question suivante", finish: "Terminer le bilan", back: "Retour", complete: "Bilan terminé", completeInfo: "Merci d’avoir pris un moment pour réfléchir. Vos réponses ne constituent pas un diagnostic.",
     again: "Recommencer", step: "Question", of: "sur", guidance: "Demander à MindCare", guidanceInfo: "Une question sur le bien-être ? Obtenez des conseils généraux, pas un diagnostic médical.",
     placeholder: "Écrivez votre question ici...", ask: "Obtenir des conseils", privacy: "Votre confidentialité compte", privacyInfo: "Évitez de partager des informations personnelles identifiantes ou sensibles dans cette zone.",
-    note: "Ce bilan sert uniquement à la réflexion. Les réponses ne sont pas enregistrées dans un compte patient.", menu: "Ouvrir le menu", close: "Fermer le menu", language: "Changer de langue", home: "Accueil", assessment: "Bilan", help: "Demander à MindCare",
+    note: "Ce bilan informel n’est pas un dépistage clinique validé ni un diagnostic. Les réponses ne sont pas enregistrées.", menu: "Ouvrir le menu", close: "Fermer le menu", language: "Changer de langue", home: "Accueil", assessment: "Bilan", help: "Demander à MindCare",
   },
 } as const
 
@@ -33,6 +33,7 @@ export default function Page() {
   const [step, setStep] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [completed, setCompleted] = useState(false)
+  const [responses, setResponses] = useState<number[]>([])
   const [prompt, setPrompt] = useState("")
   const [answer, setAnswer] = useState("")
   const [asking, setAsking] = useState(false)
@@ -65,10 +66,11 @@ export default function Page() {
   }
   function nextStep() {
     if (selected === null) return
+    setResponses(previous => { const updated = [...previous]; updated[step] = selected; return updated })
     if (step === t.question.length - 1) setCompleted(true)
-    else { setStep(step + 1); setSelected(null) }
+    else { setStep(step + 1); setSelected(responses[step + 1] ?? null) }
   }
-  function restart() { setStep(0); setSelected(null); setCompleted(false) }
+  function restart() { setStep(0); setSelected(null); setCompleted(false); setResponses([]) }
 
   return (
     <main id="home" className="min-h-screen bg-[#f7fafb] text-[#17324a]">
@@ -98,13 +100,13 @@ export default function Page() {
           <section id="checkin" className="scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
             <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e9f8fa] text-[#0d8fa5]"><CheckCircle2 size={21}/></span><h2 className="text-xl font-bold">{t.checkin}</h2></div>
             <p className="mt-3 text-sm leading-6 text-[#6b8490]">{t.checkinInfo}</p>
-            {completed ? <div className="py-10 text-center"><CheckCircle2 size={40} className="mx-auto text-[#0d8fa5]"/><h3 className="mt-3 text-lg font-bold">{t.complete}</h3><p className="mt-2 text-sm leading-6 text-[#6b8490]">{t.completeInfo}</p><button onClick={restart} className="mt-5 rounded-xl bg-[#17324a] px-5 py-3 text-sm font-bold text-white">{t.again}</button></div> :
+            {completed ? <div className="py-6"><CheckCircle2 size={36} className="text-[#0d8fa5]"/><h3 className="mt-3 text-lg font-bold">{language === "FR" ? "Votre résumé de bien-être" : "Your wellbeing summary"}</h3><p className="mt-2 text-sm leading-6 text-[#6b8490]">{language === "FR" ? "Ce résultat décrit la fréquence de vos difficultés, pas une maladie ou un diagnostic." : "This result describes how often you reported difficulties, not a condition or diagnosis."}</p><div className="mt-4 rounded-xl bg-[#edf8f9] p-4"><p className="font-bold">{responses.filter(value => value >= 2).length >= 4 ? (language === "FR" ? "Plusieurs difficultés fréquentes signalées" : "Several frequent difficulties reported") : responses.some(value => value >= 2) ? (language === "FR" ? "Certaines difficultés fréquentes signalées" : "Some frequent difficulties reported") : (language === "FR" ? "Peu de difficultés fréquentes signalées" : "Few frequent difficulties reported")}</p><p className="mt-2 text-sm leading-6">{language === "FR" ? "Si ces difficultés persistent, s'aggravent ou perturbent votre vie quotidienne, parlez-en à un professionnel de santé qualifié." : "If difficulties continue, worsen, or affect daily life, speak with a qualified healthcare professional."}</p></div><div className="mt-4 rounded-xl border border-[#dcebed] p-4"><p className="font-semibold">{language === "FR" ? "Parler à un professionnel" : "Talk to a professional"}</p><p className="mt-2 text-sm leading-6 text-[#6b8490]">{language === "FR" ? "Vous pouvez contacter un médecin, un psychologue ou un service de santé local. MindCare ne prend pas encore de rendez-vous directement." : "You can contact a doctor, psychologist, or local health service. MindCare does not yet book appointments directly."}</p><a href="https://www.google.com/maps/search/?api=1&query=mental+health+clinic" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-xl bg-[#0d8fa5] px-4 py-3 text-sm font-bold text-white">{language === "FR" ? "Trouver un service de santé" : "Find a health service"}</a></div><button onClick={restart} className="mt-5 rounded-xl border border-[#dcebed] px-5 py-3 text-sm font-bold">{t.again}</button></div> :
             <div className="mt-6">
               <div className="flex items-center justify-between text-xs font-semibold text-[#66808c]"><span>{t.step} {step + 1} {t.of} {t.question.length}</span><span>{Math.round((step / t.question.length) * 100)}%</span></div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#edf3f4]"><div className="h-full rounded-full bg-[#0d8fa5] transition-all" style={{width: `${(step / t.question.length) * 100}%`}} /></div>
               <h3 className="mt-6 text-base font-bold leading-7">{t.question[step]}</h3>
               <div className="mt-4 grid gap-2">{t.choices.map((choice, index) => <button key={index} onClick={() => setSelected(index)} aria-pressed={selected === index} className={`rounded-xl border px-4 py-3 text-left text-sm transition ${selected === index ? "border-[#0d8fa5] bg-[#edf9fa] font-semibold text-[#087f95]" : "border-[#e0eaed] hover:border-[#0d8fa5]"}`}>{choice}</button>)}</div>
-              <div className="mt-5 flex items-center justify-between gap-3">{step > 0 ? <button onClick={() => {setStep(step-1);setSelected(null)}} className="rounded-xl border border-[#dcebed] px-4 py-3 text-sm font-semibold">{t.back}</button> : <span/>}<button disabled={selected === null} onClick={nextStep} className="rounded-xl bg-[#0d8fa5] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{step === t.question.length-1 ? t.finish : t.next}</button></div>
+              <div className="mt-5 flex items-center justify-between gap-3">{step > 0 ? <button onClick={() => {setStep(step-1);setSelected(responses[step-1] ?? null)}} className="rounded-xl border border-[#dcebed] px-4 py-3 text-sm font-semibold">{t.back}</button> : <span/>}<button disabled={selected === null} onClick={nextStep} className="rounded-xl bg-[#0d8fa5] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{step === t.question.length-1 ? t.finish : t.next}</button></div>
             </div>}
             <p className="mt-6 border-t border-[#edf2f4] pt-4 text-xs leading-5 text-[#7b929e]">{t.note}</p>
           </section>
