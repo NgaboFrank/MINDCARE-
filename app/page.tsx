@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { analyzeCheckin } from "@/lib/checkin-analysis"
+import { screeners, frequencyOptions, scoreScreener, type ScreenId } from "@/lib/clinical-screeners"
 import { ArrowRight, CheckCircle2, Globe2, HeartPulse, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
 
 type Language = "EN" | "FR"
@@ -35,12 +36,20 @@ export default function Page() {
   const [selected, setSelected] = useState<number | null>(null)
   const [completed, setCompleted] = useState(false)
   const [responses, setResponses] = useState<number[]>([])
+  const [screenId, setScreenId] = useState<ScreenId | null>(null)
+  const [screenStep, setScreenStep] = useState(0)
+  const [screenAnswers, setScreenAnswers] = useState<number[]>([])
+  const [screenDone, setScreenDone] = useState(false)
+  const [screenChoice, setScreenChoice] = useState<number | null>(null)
   const [prompt, setPrompt] = useState("")
   const [answer, setAnswer] = useState("")
   const [asking, setAsking] = useState(false)
   const [askError, setAskError] = useState("")
   const t = translations[language]
   const summary = completed ? analyzeCheckin(responses, language) : null
+  const screenResult = screenId && screenDone ? scoreScreener(screenId,screenAnswers,language) : null
+  function startScreen(id:ScreenId) {setScreenId(id);setScreenStep(0);setScreenAnswers([]);setScreenChoice(null);setScreenDone(false)}
+  function advanceScreen() {if(screenChoice===null||!screenId)return;const next=[...screenAnswers];next[screenStep]=screenChoice;setScreenAnswers(next);if(screenStep===screeners[screenId].questions.length-1)setScreenDone(true);else {setScreenStep(screenStep+1);setScreenChoice(next[screenStep+1]??null)}}
   async function askMindCare() {
     if (!prompt.trim() || asking) return
     setAsking(true); setAskError(""); setAnswer("")
@@ -97,6 +106,29 @@ export default function Page() {
           <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t.welcome}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[#637d8a] sm:text-base">{t.intro}</p>
           <button onClick={() => navigate("checkin")} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0d8fa5] px-5 py-3 text-sm font-bold text-white hover:bg-[#087f95]">{t.checkin}<ArrowRight size={17}/></button>
+        </section>
+        <section id="screenings" className="mt-6 scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
+          <h2 className="text-xl font-bold">{language==="FR"?"Dépistage des symptômes":"Symptom screening"}</h2>
+          <p className="mt-2 text-sm leading-6 text-[#6b8490]">{language==="FR"?"Choisissez un questionnaire. Les résultats apparaissent immédiatement et ne constituent pas un diagnostic.":"Choose a questionnaire. Results appear immediately and are not a diagnosis."}</p>
+          <div className="mt-4 flex flex-wrap gap-2">{(["phq8","gad7"] as ScreenId[]).map(id=><button key={id} onClick={()=>startScreen(id)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${screenId===id?"border-[#0d8fa5] bg-[#e9f8fa]":"border-[#dcebed]"}`}>{screeners[id].title[language]}</button>)}</div>
+          {screenId && !screenDone && <div className="mt-5 rounded-xl border border-[#dcebed] p-4">
+            <p className="text-xs font-semibold text-[#647d88]">{screeners[screenId].description[language]}</p>
+            <p className="mt-4 text-xs font-semibold">{screenStep+1} / {screeners[screenId].questions.length}</p>
+            <div className="mt-2 h-2 rounded-full bg-[#edf3f4]"><div className="h-2 rounded-full bg-[#0d8fa5]" style={{width:`${100*screenStep/screeners[screenId].questions.length}%`}}/></div>
+            <h3 className="mt-5 font-bold">{screeners[screenId].questions[screenStep][language]}</h3>
+            <div className="mt-4 grid gap-2">{frequencyOptions[language].map((choice,index)=><button key={index} onClick={()=>setScreenChoice(index)} aria-pressed={screenChoice===index} className={`rounded-xl border p-3 text-left text-sm ${screenChoice===index?"border-[#0d8fa5] bg-[#edf9fa] font-semibold":"border-[#dcebed]"}`}>{choice}</button>)}</div>
+            <div className="mt-4 flex justify-between gap-3"><button disabled={screenStep===0} onClick={()=>{setScreenStep(screenStep-1);setScreenChoice(screenAnswers[screenStep-1]??null)}} className="rounded-xl border px-4 py-2 text-sm disabled:opacity-40">{language==="FR"?"Retour":"Back"}</button><button disabled={screenChoice===null} onClick={advanceScreen} className="rounded-xl bg-[#0d8fa5] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{screenStep===screeners[screenId].questions.length-1?(language==="FR"?"Voir les résultats":"See results"):(language==="FR"?"Suivant":"Next")}</button></div>
+          </div>}
+          {screenResult && <div className="mt-5 rounded-xl border border-[#dcebed] p-5" aria-live="polite">
+            <h3 className="text-lg font-bold">{language==="FR"?"Vos résultats de dépistage":"Your screening results"}</h3>
+            <p className="mt-3 text-2xl font-bold text-[#0d8fa5]">{screenResult.score} / {screenResult.max}</p>
+            <p className="mt-1 text-sm font-semibold">{screenResult.severity}</p>
+            <p className="mt-4 text-sm leading-6">{screenResult.advice}</p>
+            {screenResult.top.length>0 && <div className="mt-4"><p className="text-sm font-bold">{language==="FR"?"Symptômes les plus signalés":"Most reported symptoms"}</p>{screenResult.top.map((item,index)=><p key={index} className="mt-2 text-sm text-[#536e7b]">{item.question} — {item.frequency}</p>)}</div>}
+            <p className="mt-4 text-xs leading-5 text-[#647d88]">{language==="FR"?"Les résultats sont indicatifs et ne remplacent pas une évaluation clinique. Si vous avez besoin d'aide, parlez à un professionnel de santé ou à une personne de confiance.":"Screening scores are not a diagnosis and cannot rule out a condition. If you need help, talk to a qualified healthcare professional or someone you trust."}</p>
+            <a href="https://www.google.com/maps/search/?api=1&query=mental+health+clinic" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-xl bg-[#0d8fa5] px-4 py-3 text-sm font-bold text-white">{language==="FR"?"Trouver un service de santé":"Find a health service"}</a>
+            <button onClick={()=>startScreen(screenId)} className="ml-2 mt-4 rounded-xl border border-[#dcebed] px-4 py-3 text-sm font-bold">{language==="FR"?"Recommencer":"Start again"}</button>
+          </div>}
         </section>
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
           <section id="checkin" className="scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
