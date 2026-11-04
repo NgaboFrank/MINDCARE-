@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { generateGuidance } from "@/lib/assessment-engine"
+import { useEffect, useState } from "react"
 import { ArrowRight, CheckCircle2, Globe2, HeartPulse, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
 
 type Language = "EN" | "FR"
@@ -35,9 +34,21 @@ export default function Page() {
   const [selected, setSelected] = useState<number | null>(null)
   const [completed, setCompleted] = useState(false)
   const [prompt, setPrompt] = useState("")
-  const [submittedPrompt, setSubmittedPrompt] = useState("")
+  const [answer, setAnswer] = useState("")
+  const [asking, setAsking] = useState(false)
+  const [askError, setAskError] = useState("")
   const t = translations[language]
-  const guidance = useMemo(() => submittedPrompt.trim() ? generateGuidance(submittedPrompt) : null, [submittedPrompt])
+  async function askMindCare() {
+    if (!prompt.trim() || asking) return
+    setAsking(true); setAskError(""); setAnswer("")
+    try {
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: prompt.trim(), language }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Service unavailable")
+      setAnswer(data.answer)
+    } catch (error) { setAskError(error instanceof Error ? error.message : "Service unavailable") }
+    finally { setAsking(false) }
+  }
 
   useEffect(() => {
     const saved = window.localStorage.getItem("mindcare-language")
@@ -101,8 +112,8 @@ export default function Page() {
             <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e9f8fa] text-[#0d8fa5]"><MessageCircleQuestion size={21}/></span><h2 className="text-xl font-bold">{t.guidance}</h2></div>
             <p className="mt-3 text-sm leading-6 text-[#6b8490]">{t.guidanceInfo}</p>
             <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder={t.placeholder} className="mt-5 min-h-32 w-full resize-y rounded-xl border border-[#dcebed] bg-[#fbfdfd] p-4 text-sm outline-none focus:border-[#0d8fa5]" />
-            <button disabled={!prompt.trim()} onClick={() => setSubmittedPrompt(prompt)} className="mt-3 w-full rounded-xl bg-[#17324a] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{t.ask}</button>
-            {guidance && <div className="mt-5 rounded-xl border border-[#dcebed] bg-[#f3fafb] p-4" aria-live="polite"><h3 className="text-sm font-bold">{guidance.title}</h3><p className="mt-2 text-sm leading-6 text-[#607883]">{guidance.response}</p></div>}
+            <button disabled={!prompt.trim() || asking} onClick={askMindCare} className="mt-3 w-full rounded-xl bg-[#17324a] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{asking ? (language === "FR" ? "Réponse en cours…" : "Thinking…") : t.ask}</button>
+            {askError && <p role="alert" className="mt-3 text-sm text-red-700">{askError}</p>}{answer && <div className="mt-5 rounded-xl border border-[#dcebed] bg-[#f3fafb] p-4" aria-live="polite"><p className="whitespace-pre-wrap text-sm leading-6 text-[#607883]">{answer}</p></div>}
             <div className="mt-6 flex items-start gap-3 rounded-xl bg-[#f3f8f9] p-4"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-[#0d8fa5]"/><div><p className="text-sm font-bold">{t.privacy}</p><p className="mt-1 text-xs leading-5 text-[#6b8490]">{t.privacyInfo}</p></div></div>
           </section>
         </div>
