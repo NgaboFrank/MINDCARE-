@@ -1,95 +1,169 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { generateGuidance } from "@/lib/assessment-engine"
-import {
-  Activity,
-  ArrowUpRight,
-  Bell,
-  BookOpen,
-  Brain,
-  CalendarDays,
-  CheckCircle2,
-  ChevronDown,
-  CircleHelp,
-  ClipboardCheck,
-  HeartPulse,
-  LayoutDashboard,
-  LifeBuoy,
-  Menu,
-  MessageCircleQuestion,
-  Search,
-  Settings,
-  Globe2,
-  LogOut,
-  UserRound,
-  ShieldCheck,
-  Sparkles,
-  Target,
-  X,
-} from "lucide-react"
+import { useEffect, useState } from "react"
+import { analyzeCheckin } from "@/lib/checkin-analysis"
+import { screeners, frequencyOptions, scoreScreener, type ScreenId } from "@/lib/clinical-screeners"
+import { ArrowRight, CheckCircle2, ChevronDown, Check, HeartPulse, ClipboardList, Brain, MessageCircle, Home, ShieldCheck as ShieldIcon, Menu, MessageCircleQuestion, ShieldCheck, X } from "lucide-react"
 
-const answers = [
-  { label: "Not at all", score: 0 },
-  { label: "Several days", score: 1 },
-  { label: "More than half the days", score: 2 },
-  { label: "Nearly every day", score: 3 },
-]
-
-const prompts = [
-  "How have you been feeling most days this week?",
-  "How easy has it been to focus on everyday tasks?",
-  "How supported do you feel right now?",
-]
+type Language = "EN" | "FR"
+const translations = {
+  EN: {
+    dashboard: "Dashboard", welcome: "Welcome to MindCare", intro: "Take a moment to check in with yourself. You can start with a short check-in or ask a wellbeing question.",
+    checkin: "Quick check-in", checkinInfo: "Eight short questions about the past two weeks. Choose what best describes your experience.",
+    question: ["How often have you felt down or lost interest in activities?", "How often have worries been difficult to manage?", "How often has stress affected your daily routine?", "How often have you had difficulty sleeping?", "How often have you found it difficult to concentrate?", "How often have you felt isolated or unsupported?", "How often have you felt unusually tired?", "How often have your feelings interfered with school, work, or relationships?"],
+    choices: ["Never", "Sometimes", "Often", "Almost every day"],
+    next: "Next question", finish: "Finish check-in", back: "Back", complete: "Check-in complete", completeInfo: "Thank you for taking a moment to reflect. Your answers are not a diagnosis.",
+    again: "Start again", step: "Question", of: "of", guidance: "Ask MindCare", guidanceInfo: "Have a wellbeing question? Get general guidance, not a medical diagnosis.",
+    placeholder: "Type your question here...", ask: "Get guidance", privacy: "Your privacy matters", privacyInfo: "Avoid sharing identifying or sensitive personal information in this question box.",
+    note: "This is an informal, non-validated wellbeing check-in, not a clinical screening or diagnosis. Your answers are not saved to an account.", menu: "Open menu", close: "Close menu", language: "Switch language", home: "Home", assessment: "Check-in", help: "Ask MindCare",
+  },
+  FR: {
+    dashboard: "Tableau de bord", welcome: "Bienvenue sur MindCare", intro: "Prenez un moment pour faire le point. Commencez par un court bilan ou posez une question sur le bien-être.",
+    checkin: "Bilan rapide", checkinInfo: "Huit questions courtes sur les deux dernières semaines. Choisissez ce qui vous correspond.",
+    question: ["À quelle fréquence vous êtes-vous senti(e) triste ou avez-vous perdu tout intérêt ?", "À quelle fréquence vos inquiétudes ont-elles été difficiles à gérer ?", "À quelle fréquence le stress a-t-il perturbé votre quotidien ?", "À quelle fréquence avez-vous eu du mal à dormir ?", "À quelle fréquence avez-vous eu du mal à vous concentrer ?", "À quelle fréquence vous êtes-vous senti(e) isolé(e) ou sans soutien ?", "À quelle fréquence vous êtes-vous senti(e) anormalement fatigué(e) ?", "À quelle fréquence vos émotions ont-elles perturbé vos études, votre travail ou vos relations ?"],
+    choices: ["Jamais", "Parfois", "Souvent", "Presque tous les jours"],
+    next: "Question suivante", finish: "Terminer le bilan", back: "Retour", complete: "Bilan terminé", completeInfo: "Merci d’avoir pris un moment pour réfléchir. Vos réponses ne constituent pas un diagnostic.",
+    again: "Recommencer", step: "Question", of: "sur", guidance: "Demander à MindCare", guidanceInfo: "Une question sur le bien-être ? Obtenez des conseils généraux, pas un diagnostic médical.",
+    placeholder: "Écrivez votre question ici...", ask: "Obtenir des conseils", privacy: "Votre confidentialité compte", privacyInfo: "Évitez de partager des informations personnelles identifiantes ou sensibles dans cette zone.",
+    note: "Ce bilan informel n’est pas un dépistage clinique validé ni un diagnostic. Les réponses ne sont pas enregistrées.", menu: "Ouvrir le menu", close: "Fermer le menu", language: "Changer de langue", home: "Accueil", assessment: "Bilan", help: "Demander à MindCare",
+  },
+} as const
 
 export default function Page() {
-  const [mobileNav, setMobileNav] = useState(false)
-  const [active, setActive] = useState("Overview")
-  const [language, setLanguage] = useState<"EN" | "FR">("EN")
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [showProfile, setShowProfile] = useState(false)
-  const [prompt, setPrompt] = useState("")
-  const [response, setResponse] = useState("")
+  const [language, setLanguage] = useState<Language>("EN")
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [languageOpen, setLanguageOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
-  const [submitted, setSubmitted] = useState(false)
-
-  const guidance = useMemo(() => response.trim() ? generateGuidance(response) : null, [response])
-
-  function submitCheckIn() {
-    if (selected === null) return
-    setSubmitted(true)
+  const [completed, setCompleted] = useState(false)
+  const [responses, setResponses] = useState<number[]>([])
+  const [screenId, setScreenId] = useState<ScreenId | null>(null)
+  const [screenStep, setScreenStep] = useState(0)
+  const [screenAnswers, setScreenAnswers] = useState<number[]>([])
+  const [screenDone, setScreenDone] = useState(false)
+  const [screenChoice, setScreenChoice] = useState<number | null>(null)
+  const [prompt, setPrompt] = useState("")
+  const [answer, setAnswer] = useState("")
+  const [asking, setAsking] = useState(false)
+  const [askError, setAskError] = useState("")
+  const t = translations[language]
+  const summary = completed ? analyzeCheckin(responses, language) : null
+  const screenResult = screenId && screenDone ? scoreScreener(screenId,screenAnswers,language) : null
+  function startScreen(id:ScreenId) {setScreenId(id);setScreenStep(0);setScreenAnswers([]);setScreenChoice(null);setScreenDone(false)}
+  function advanceScreen() {if(screenChoice===null||!screenId)return;const next=[...screenAnswers];next[screenStep]=screenChoice;setScreenAnswers(next);if(screenStep===screeners[screenId].questions.length-1)setScreenDone(true);else {setScreenStep(screenStep+1);setScreenChoice(next[screenStep+1]??null)}}
+  async function askMindCare() {
+    if (!prompt.trim() || asking) return
+    setAsking(true); setAskError(""); setAnswer("")
+    try {
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: prompt.trim(), language }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Service unavailable")
+      setAnswer(data.answer)
+    } catch (error) { setAskError(error instanceof Error ? error.message : "Service unavailable") }
+    finally { setAsking(false) }
   }
 
+  useEffect(() => {
+    const saved = window.localStorage.getItem("mindcare-language")
+    if (saved === "EN" || saved === "FR") setLanguage(saved)
+  }, [])
+  function chooseLanguage(next: Language) {
+    setLanguage(next)
+    setLanguageOpen(false)
+    window.localStorage.setItem("mindcare-language", next)
+  }
+  function navigate(id: string) {
+    setMenuOpen(false)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })
+  }
+  function nextStep() {
+    if (selected === null) return
+    setResponses(previous => { const updated = [...previous]; updated[step] = selected; return updated })
+    if (step === t.question.length - 1) setCompleted(true)
+    else { setStep(step + 1); setSelected(responses[step + 1] ?? null) }
+  }
+  function restart() { setStep(0); setSelected(null); setCompleted(false); setResponses([]) }
+
   return (
-    <main className="min-h-screen bg-[#f5f8fa] text-[#17324a]">
-      <div className="flex min-h-screen">
-        <aside className={`fixed inset-y-0 left-0 z-20 flex w-[252px] flex-col border-r border-[#dfe9ee] bg-white px-5 py-6 transition-transform lg:static lg:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}>
-          <div className="flex items-center justify-between px-2"><a href="#overview" className="flex items-center gap-2.5"><span className="grid size-9 place-items-center rounded-xl bg-[#0d8fa5] text-white"><HeartPulse className="size-5" /></span><span className="text-xl font-bold tracking-[-.04em]">mindcare<span className="text-[#0d9eb7]">.</span></span></a><button className="lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close menu"><X className="size-5" /></button></div>
-          <p className="mt-10 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-[#96a9b4]">Workspace</p>
-          <nav className="mt-3 flex flex-col gap-1">{[{ icon: LayoutDashboard, label: "Overview" }, { icon: Sparkles, label: "Start assessment" }, { icon: ClipboardCheck, label: "My assessments" }, { icon: Activity, label: "Assessment history" }, { icon: Target, label: "Wellness insights" }, { icon: BookOpen, label: "Resources" }].map(({ icon: Icon, label }) => <button key={label} onClick={() => { setActive(label); setMobileNav(false) }} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition ${active === label ? "bg-[#e9f8fa] text-[#087f95]" : "text-[#647987] hover:bg-[#f4f8f9]"}`}><Icon className="size-[18px]" />{label}{label === "My assessments" && <span className="ml-auto rounded-full bg-[#dff4f5] px-2 py-0.5 text-[10px]">2</span>}</button>)}</nav>
-          <p className="mt-9 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-[#96a9b4]">Support</p>
-          <nav className="mt-3 flex flex-col gap-1"><button className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-[#647987] hover:bg-[#f4f8f9]"><UserRound className="size-[18px]" />My profile</button><button className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-[#647987] hover:bg-[#f4f8f9]"><Settings className="size-[18px]" />Settings</button><button className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-[#647987] hover:bg-[#f4f8f9]"><LifeBuoy className="size-[18px]" />Help & support</button><button className="flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-[#647987] hover:bg-[#f4f8f9]"><LogOut className="size-[18px]" />Log out</button></nav>
-          <div className="mt-auto rounded-2xl bg-[#17324a] p-4 text-white"><ShieldCheck className="size-5 text-[#82d8df]" /><p className="mt-3 text-sm font-bold">Your privacy matters</p><p className="mt-1 text-[11px] leading-5 text-[#b6cbd4]">Your reflections are private and never used to diagnose you.</p><button className="mt-3 text-[11px] font-bold text-[#82d8df]">Learn about privacy →</button></div>
-        </aside>
-
-        <section className="min-w-0 flex-1"><header className="sticky top-0 z-10 flex h-[76px] items-center justify-between border-b border-[#dfe9ee] bg-white/95 px-5 backdrop-blur sm:px-8"><div className="flex items-center gap-4"><button className="lg:hidden" onClick={() => setMobileNav(true)} aria-label="Open menu"><Menu /></button><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#91a4ad]">Patient portal</p><p className="text-sm font-bold text-[#17324a]">Overview</p></div><div className="relative ml-2 hidden md:block"><Search className="absolute left-3 top-2.5 size-4 text-[#9badb6]" /><input aria-label="Search" placeholder="Search your space" className="h-9 w-56 rounded-lg border border-[#e4edf0] bg-[#f8fafb] pl-9 text-sm outline-none focus:border-[#77cbd3]" /></div></div><div className="flex items-center gap-3"><button onClick={() => setLanguage(language === "EN" ? "FR" : "EN")} className="hidden items-center gap-1.5 rounded-lg border border-[#e4edf0] px-2.5 py-2 text-[11px] font-bold text-[#647987] sm:flex" aria-label="Switch language"><Globe2 className="size-3.5" />{language}<ChevronDown className="size-3" /></button><div className="relative"><button aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)} className="relative rounded-lg p-2 text-[#6b808c] hover:bg-[#f4f8f9]"><Bell className="size-[19px]" /><span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-[#e25d5d]" /></button>{showNotifications && <div className="absolute right-0 top-11 z-20 w-64 rounded-xl border border-[#dfe9ee] bg-white p-4 shadow-[0_14px_35px_rgba(18,48,71,.12)]"><p className="text-xs font-bold text-[#17324a]">Notifications</p><p className="mt-3 text-xs leading-5 text-[#647987]">Your weekly reflection is ready to review.</p><button className="mt-3 text-[11px] font-bold text-[#0d8fa5]">View updates</button></div>}</div><div className="h-7 w-px bg-[#e2eaed]" /><div className="relative"><button onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 text-left" aria-label="Open profile menu"><span className="grid size-8 place-items-center rounded-full bg-[#d7eef0] text-xs font-bold text-[#087f95]">AM</span><span className="hidden text-sm font-bold sm:block">Alex Morgan</span><ChevronDown className="size-4 text-[#8ca0aa]" /></button>{showProfile && <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-[#dfe9ee] bg-white p-2 shadow-[0_14px_35px_rgba(18,48,71,.12)]"><button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#647987] hover:bg-[#f4f8f9]"><UserRound className="size-4" /> My profile</button><button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#647987] hover:bg-[#f4f8f9]"><Settings className="size-4" /> Settings</button></div>}</div></div></header>
-
-          <div className="mx-auto max-w-[1360px] px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold text-[#8498a3]">Tuesday, November 4, 2026</p><h1 className="mt-1 text-2xl font-bold tracking-[-.04em] sm:text-3xl">Good morning, Alex</h1><p className="mt-2 text-sm text-[#708691]">A clear view of your wellbeing, one small step at a time.</p></div><button onClick={() => document.getElementById("guided-checkin")?.scrollIntoView({ behavior: "smooth" })} className="flex w-fit items-center gap-2 rounded-xl bg-[#0d8fa5] px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(13,143,165,.18)] hover:bg-[#087f95]"><Sparkles className="size-4" />Start check-in</button></div>
-
-            <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={HeartPulse} label="Wellbeing score" value="72" suffix="/100" trend="+8% this month" color="teal" /><Metric icon={Target} label="Check-in streak" value="12" suffix=" days" trend="Best: 18 days" color="blue" /><Metric icon={CalendarDays} label="Next reflection" value="Thu" suffix=" · 9:00 AM" trend="In 2 days" color="purple" /><Metric icon={CheckCircle2} label="Weekly progress" value="4" suffix=" / 5" trend="Almost there" color="green" /></div>
-
-            <div className="mt-5 grid gap-5 xl:grid-cols-[1.45fr_.8fr]"><section className="rounded-2xl border border-[#dfe9ee] bg-white p-5 sm:p-6"><div className="flex items-start justify-between"><div><div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-lg bg-[#e9f8fa] text-[#0d8fa5]"><Activity className="size-4" /></span><h2 className="font-bold">Your wellbeing overview</h2></div><p className="mt-2 text-xs text-[#81959f]">Your self-reported check-ins over the last 30 days</p></div><button className="flex items-center gap-1 text-xs font-bold text-[#0d8fa5]">View details <ArrowUpRight className="size-3.5" /></button></div><div className="mt-7 flex h-44 items-end gap-2 sm:gap-4">{[38,48,45,58,52,67,62,70,65,76,72,82,78,88,84,91].map((height, index) => <div key={index} className="group flex h-full flex-1 flex-col justify-end gap-2"><div className="relative w-full rounded-t-md bg-[#d9f1f3] transition group-hover:bg-[#8bd4da]" style={{ height: `${height}%` }}><span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-[#17324a] px-1.5 py-1 text-[9px] text-white group-hover:block">{height}</span></div>{index % 3 === 0 && <span className="text-center text-[9px] text-[#9badb6]">{index === 0 ? "Oct 21" : index === 15 ? "Today" : `Oct ${21 + index}`}</span>}</div>)}</div><div className="mt-5 flex items-center gap-5 border-t border-[#eef3f5] pt-4 text-[11px] text-[#81959f]"><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[#0d8fa5]" />Your score</span><span className="flex items-center gap-2"><i className="size-2 rounded-full bg-[#d9f1f3]" />Baseline</span><span className="ml-auto font-semibold text-[#0d8fa5]">Trending positively</span></div></section><section className="rounded-2xl bg-[#17324a] p-6 text-white"><div className="flex items-start justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#82d8df]">Today&apos;s focus</p><h2 className="mt-3 text-xl font-bold">Protect your energy</h2></div><Brain className="size-6 text-[#82d8df]" /></div><p className="mt-4 text-sm leading-6 text-[#bed0d7]">Choose one boundary that gives you a little more room today.</p><div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-xs font-semibold text-[#82d8df]">2-minute practice</p><p className="mt-2 text-sm font-semibold">Write down one thing you can say no to.</p></div><button className="mt-5 w-full rounded-lg bg-[#82d8df] py-3 text-xs font-bold text-[#17324a]">Open guided practice</button></section></div>
-
-            <div id="guided-checkin" className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_.85fr]"><section className="rounded-2xl border border-[#dfe9ee] bg-white p-5 sm:p-6"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-lg bg-[#fff3df] text-[#cf8a25]"><MessageCircleQuestion className="size-4" /></span><h2 className="font-bold">Ask MindCare</h2></div><span className="rounded-full bg-[#edf7f8] px-2.5 py-1 text-[10px] font-bold text-[#0d8fa5]">Guided support</span></div><p className="mt-2 text-xs leading-5 text-[#81959f]">Ask a wellbeing question. You&apos;ll receive practical, safety-aware guidance — not a diagnosis.</p><textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="For example: How can I calm down before a difficult conversation?" className="mt-5 min-h-24 w-full resize-none rounded-xl border border-[#e1ebee] bg-[#fafcfc] p-4 text-sm outline-none placeholder:text-[#9badb6] focus:border-[#72cbd2]" /><div className="mt-3 flex items-center justify-between"><span className="flex items-center gap-1.5 text-[10px] text-[#8ba0aa]"><ShieldCheck className="size-3.5 text-[#0d8fa5]" />Private and confidential</span><button onClick={() => setResponse(prompt)} disabled={!prompt.trim()} className="rounded-lg bg-[#0d8fa5] px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Get guidance <ArrowUpRight className="ml-1 inline size-3.5" /></button></div>{guidance && <div className={`mt-5 rounded-xl border p-4 ${guidance.urgency === "urgent" ? "border-[#f1caca] bg-[#fff5f5]" : "border-[#ccebed] bg-[#f1fbfb]"}`}><p className="text-sm font-bold">{guidance.title}</p><p className="mt-1 text-xs leading-5 text-[#607883]">{guidance.response}</p></div>}</section><section className="rounded-2xl border border-[#dfe9ee] bg-white p-5 sm:p-6"><div className="flex items-center justify-between"><div><h2 className="font-bold">Weekly check-in</h2><p className="mt-1 text-xs text-[#81959f]">A quick pulse on how you&apos;re doing</p></div><span className="text-xs font-bold text-[#0d8fa5]">{step + 1} / {prompts.length}</span></div><div className="mt-4 h-1.5 rounded-full bg-[#edf3f4]"><div className="h-full rounded-full bg-[#0d8fa5] transition-all" style={{ width: `${((step + 1) / prompts.length) * 100}%` }} /></div>{submitted ? <div className="py-10 text-center"><CheckCircle2 className="mx-auto size-10 text-[#1c9b79]" /><p className="mt-3 font-bold">Check-in saved</p><p className="mt-1 text-xs text-[#81959f]">Thanks for making space for yourself today.</p><button onClick={() => { setSubmitted(false); setSelected(null) }} className="mt-4 text-xs font-bold text-[#0d8fa5]">Start another</button></div> : <><h3 className="mt-6 text-base font-bold leading-6">{prompts[step]}</h3><div className="mt-5 flex flex-col gap-2">{answers.map((answer) => <button key={answer.label} onClick={() => setSelected(answer.score)} className={`rounded-lg border px-3 py-2.5 text-left text-xs font-semibold transition ${selected === answer.score ? "border-[#0d8fa5] bg-[#edf9fa] text-[#087f95]" : "border-[#e4edef] text-[#657d88] hover:border-[#9ad8dd]"}`}>{answer.label}<span className="float-right text-[10px] text-[#9badb6]">{answer.score === 0 ? "Low" : answer.score === 3 ? "High" : ""}</span></button>)}</div><button onClick={() => { if (step === prompts.length - 1) submitCheckIn(); else { setStep(step + 1); setSelected(null) } }} className="mt-5 w-full rounded-lg bg-[#17324a] py-3 text-xs font-bold text-white disabled:opacity-40" disabled={selected === null}>{step === prompts.length - 1 ? "Save check-in" : "Continue"}</button></>}</section></div>
+    <main id="home" className="min-h-screen bg-[#f7fafb] text-[#17324a]">
+      <header className="sticky top-0 z-20 border-b border-[#0d4a8a] bg-[#0d4a8a] text-white">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+          <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight">mindcare<span className="-ml-2 text-white">.</span></a>
+          <nav className="hidden items-center gap-6 text-sm font-semibold text-white/85 sm:flex" aria-label="Main navigation">
+            <button onClick={() => navigate("home")} className="hover:text-white">{t.home}</button>
+            <button onClick={() => navigate("checkin")} className="hover:text-white">{t.assessment}</button>
+            <button onClick={() => navigate("ask")} className="hover:text-white">{t.help}</button>
+          </nav>
+          <div className="flex items-center gap-2">
+            <div className="relative"><button type="button" aria-label={t.language} aria-expanded={languageOpen} aria-haspopup="menu" onClick={() => setLanguageOpen(!languageOpen)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-white hover:bg-white/15">{language}<ChevronDown size={15} className={`transition-transform ${languageOpen?"rotate-180":""}`}/></button>{languageOpen && <div role="menu" aria-label={t.language} className="absolute right-0 top-full z-40 mt-2 w-40 overflow-hidden rounded-xl border border-[#dce5ee] bg-white py-1 text-[#34465b] shadow-xl">{(["EN","FR"] as Language[]).map(code=><button type="button" role="menuitemradio" aria-checked={language===code} key={code} onClick={()=>chooseLanguage(code)} className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold hover:bg-[#edf4fb] ${language===code?"bg-[#e8f1fb] text-[#0d4a8a]":""}`}>{code==="EN"?"English":"Français"}{language===code && <Check size={16}/>}</button>)}</div>}</div>
+            <button type="button" className="rounded-lg p-2 text-white hover:bg-white/15" aria-label={menuOpen ? t.close : t.menu} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
           </div>
+        </div>
+        {menuOpen && <nav aria-label={language==="FR"?"Menu MindCare":"MindCare menu"} className="absolute right-4 top-[60px] z-40 w-[min(290px,calc(100vw-32px))] overflow-hidden rounded-xl border border-white/15 bg-[#103e70] p-2 text-white shadow-2xl sm:right-6">
+          {([
+            {id:"home",en:"Home",fr:"Accueil",Icon:Home},
+            {id:"checkin",en:"Quick check-in",fr:"Bilan rapide",Icon:ClipboardList},
+            {id:"screenings",en:"PHQ-8 & GAD-7 screening",fr:"Dépistage PHQ-8 et GAD-7",Icon:Brain},
+            {id:"ask",en:"Ask MindCare",fr:"Demander à MindCare",Icon:MessageCircle},
+            {id:"privacy",en:"Privacy information",fr:"Confidentialité",Icon:ShieldIcon}
+          ]).map(item=><button key={item.id} onClick={()=>navigate(item.id)} className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/10"><item.Icon size={17}/>{language==="FR"?item.fr:item.en}</button>)}
+          <div className="my-1 border-t border-white/15"/>
+          <p className="px-4 py-2 text-xs leading-5 text-white/70">{language==="FR"?"Les bilans ne remplacent pas un diagnostic médical.":"Screenings do not replace a medical diagnosis."}</p>
+        </nav>}
+      </header>
+      <div className="mx-auto max-w-5xl px-4 pb-16 pt-9 sm:px-6 sm:pt-12">
+        <section className="rounded-3xl border border-[#dcebed] bg-white px-6 py-9 sm:px-10">
+          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{t.welcome}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#637d8a] sm:text-base">{t.intro}</p>
+          <button onClick={() => navigate("checkin")} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0d8fa5] px-5 py-3 text-sm font-bold text-white hover:bg-[#087f95]">{t.checkin}<ArrowRight size={17}/></button>
         </section>
+        <section id="screenings" className="mt-6 scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
+          <h2 className="text-xl font-bold">{language==="FR"?"Dépistage des symptômes":"Symptom screening"}</h2>
+          <p className="mt-2 text-sm leading-6 text-[#6b8490]">{language==="FR"?"Choisissez un questionnaire. Les résultats apparaissent immédiatement et ne constituent pas un diagnostic.":"Choose a questionnaire. Results appear immediately and are not a diagnosis."}</p>
+          <div className="mt-4 flex flex-wrap gap-2">{(["phq8","gad7"] as ScreenId[]).map(id=><button key={id} onClick={()=>startScreen(id)} className={`rounded-xl border px-4 py-3 text-sm font-semibold ${screenId===id?"border-[#0d8fa5] bg-[#e9f8fa]":"border-[#dcebed]"}`}>{screeners[id].title[language]}</button>)}</div>
+          {screenId && !screenDone && <div className="mt-5 rounded-xl border border-[#dcebed] p-4">
+            <p className="text-xs font-semibold text-[#647d88]">{screeners[screenId].description[language]}</p>
+            <p className="mt-4 text-xs font-semibold">{screenStep+1} / {screeners[screenId].questions.length}</p>
+            <div className="mt-2 h-2 rounded-full bg-[#edf3f4]"><div className="h-2 rounded-full bg-[#0d8fa5]" style={{width:`${100*screenStep/screeners[screenId].questions.length}%`}}/></div>
+            <h3 className="mt-5 font-bold">{screeners[screenId].questions[screenStep][language]}</h3>
+            <div className="mt-4 grid gap-2">{frequencyOptions[language].map((choice,index)=><button key={index} onClick={()=>setScreenChoice(index)} aria-pressed={screenChoice===index} className={`rounded-xl border p-3 text-left text-sm ${screenChoice===index?"border-[#0d8fa5] bg-[#edf9fa] font-semibold":"border-[#dcebed]"}`}>{choice}</button>)}</div>
+            <div className="mt-4 flex justify-between gap-3"><button disabled={screenStep===0} onClick={()=>{setScreenStep(screenStep-1);setScreenChoice(screenAnswers[screenStep-1]??null)}} className="rounded-xl border px-4 py-2 text-sm disabled:opacity-40">{language==="FR"?"Retour":"Back"}</button><button disabled={screenChoice===null} onClick={advanceScreen} className="rounded-xl bg-[#0d8fa5] px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{screenStep===screeners[screenId].questions.length-1?(language==="FR"?"Voir les résultats":"See results"):(language==="FR"?"Suivant":"Next")}</button></div>
+          </div>}
+          {screenResult && <div className="mt-5 rounded-xl border border-[#dcebed] p-5" aria-live="polite">
+            <h3 className="text-lg font-bold">{language==="FR"?"Vos résultats de dépistage":"Your screening results"}</h3>
+            <p className="mt-3 text-2xl font-bold text-[#0d8fa5]">{screenResult.score} / {screenResult.max}</p>
+            <p className="mt-1 text-sm font-semibold">{screenResult.severity}</p>
+            <p className="mt-4 text-sm leading-6">{screenResult.advice}</p>
+            {screenResult.top.length>0 && <div className="mt-4"><p className="text-sm font-bold">{language==="FR"?"Symptômes les plus signalés":"Most reported symptoms"}</p>{screenResult.top.map((item,index)=><p key={index} className="mt-2 text-sm text-[#536e7b]">{item.question} — {item.frequency}</p>)}</div>}
+            <p className="mt-4 text-xs leading-5 text-[#647d88]">{language==="FR"?"Les résultats sont indicatifs et ne remplacent pas une évaluation clinique. Si vous avez besoin d'aide, parlez à un professionnel de santé ou à une personne de confiance.":"Screening scores are not a diagnosis and cannot rule out a condition. If you need help, talk to a qualified healthcare professional or someone you trust."}</p>
+            <a href="https://www.google.com/maps/search/?api=1&query=mental+health+clinic" target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-xl bg-[#0d8fa5] px-4 py-3 text-sm font-bold text-white">{language==="FR"?"Trouver un service de santé":"Find a health service"}</a>
+            <button onClick={()=>startScreen(screenId)} className="ml-2 mt-4 rounded-xl border border-[#dcebed] px-4 py-3 text-sm font-bold">{language==="FR"?"Recommencer":"Start again"}</button>
+          </div>}
+        </section>
+        <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
+          <section id="checkin" className="scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
+            <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e9f8fa] text-[#0d8fa5]"><CheckCircle2 size={21}/></span><h2 className="text-xl font-bold">{t.checkin}</h2></div>
+            <p className="mt-3 text-sm leading-6 text-[#6b8490]">{t.checkinInfo}</p>
+            {completed ? <div className="py-5"><h3 className="text-lg font-bold">{language==="FR"?"Résultats du bilan rapide":"Your quick check-in results"}</h3><p className="mt-3 text-2xl font-bold text-[#0d8fa5]">{responses.reduce((total,value)=>total+value,0)} / 24</p><p className="mt-1 text-sm font-semibold">{language==="FR"?"Total des fréquences signalées (non clinique)":"Reported frequency total (non-clinical)"}</p><p className="mt-3 text-xs leading-5 text-[#647d88]">{language==="FR"?"Ce total n’est pas un score diagnostique ni une mesure de gravité validée.":"This total is not a diagnostic score or a validated severity measure."}</p><p className="mt-4 rounded-xl bg-[#edf8f9] p-4 text-sm leading-6">{summary?.recommendation}</p><details className="mt-4 rounded-xl border border-[#dcebed] p-4"><summary className="cursor-pointer text-sm font-bold">{language==="FR"?"Voir votre analyse personnalisée et vos conseils":"View your personalized analysis and advice"}</summary><div className="mt-4"><p className="mt-3 text-sm leading-6 text-[#536e7b]">{summary?.explanation}</p>{summary?.details.map(item => <div key={item.id} className="mt-3 rounded-xl border border-[#dcebed] p-4"><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold">{item.label}</h4><span className="rounded-lg bg-[#edf8f9] px-2 py-1 text-xs font-semibold text-[#087f95]">{item.frequency}</span></div><p className="mt-3 text-sm leading-6 text-[#536e7b]">{item.advice}</p><p className="mt-2 text-xs leading-5 text-[#647d88]">{item.followup}</p></div>)}<div className="mt-5 rounded-xl border-2 border-[#0d8fa5] bg-[#f3fafb] p-5" aria-live="polite"><h4 className="text-lg font-bold">{summary?.finalHeading}</h4><h5 className="mt-4 text-sm font-bold">{language==="FR"?"Conclusion de l’évaluation":"Assessment conclusion"}</h5><p className="mt-2 text-sm leading-7">{summary?.finalConclusion}</p><h5 className="mt-4 text-sm font-bold">{language==="FR"?"Comment vos difficultés peuvent être liées":"How your concerns may connect"}</h5><p className="mt-2 text-sm leading-7">{summary?.insight}</p><h5 className="mt-4 text-sm font-bold">{language==="FR"?"Votre plan d’action personnalisé":"Your personalized action plan"}</h5><ol className="mt-2 list-decimal space-y-2 pl-5 text-sm leading-6">{summary?.actionPlan.map((action,index)=><li key={index}>{action}</li>)}</ol><h5 className="mt-4 text-sm font-bold">{language==="FR"?"Suivi et prochaines étapes":"Follow-up and next steps"}</h5><p className="mt-2 text-sm leading-7">{summary?.followup}</p></div><p className="mt-4 text-xs leading-5 text-[#647d88]">{summary?.notice}</p><div className="mt-4 rounded-xl border border-[#dcebed] p-4"><p className="font-semibold">{summary?.careLevel === "recommended" ? (language === "FR" ? "Évaluation professionnelle recommandée" : "Professional assessment recommended") : summary?.careLevel === "consider" ? (language === "FR" ? "Envisager un avis professionnel" : "Consider professional advice") : (language === "FR" ? "Soutien disponible si nécessaire" : "Support is available if needed")}</p><p className="mt-2 text-sm leading-6 text-[#6b8490]">{language === "FR" ? "Pour obtenir une évaluation, contactez un médecin ou un psychologue qualifié. MindCare ne prend pas encore de rendez-vous." : "For a professional assessment, contact a qualified doctor or psychologist. MindCare does not yet book appointments."}</p><a href="https://www.google.com/maps/search/?api=1&query=mental+health+clinic" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-xl bg-[#0d8fa5] px-4 py-3 text-sm font-bold text-white">{language === "FR" ? "Trouver un service de santé" : "Find a health service"}</a></div></div></details><button onClick={restart} className="mt-5 rounded-xl border border-[#dcebed] px-5 py-3 text-sm font-bold">{t.again}</button></div> :
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-xs font-semibold text-[#66808c]"><span>{t.step} {step + 1} {t.of} {t.question.length}</span><span>{Math.round((step / t.question.length) * 100)}%</span></div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#edf3f4]"><div className="h-full rounded-full bg-[#0d8fa5] transition-all" style={{width: `${(step / t.question.length) * 100}%`}} /></div>
+              <h3 className="mt-6 text-base font-bold leading-7">{t.question[step]}</h3>
+              <div className="mt-4 grid gap-2">{t.choices.map((choice, index) => <button key={index} onClick={() => setSelected(index)} aria-pressed={selected === index} className={`rounded-xl border px-4 py-3 text-left text-sm transition ${selected === index ? "border-[#0d8fa5] bg-[#edf9fa] font-semibold text-[#087f95]" : "border-[#e0eaed] hover:border-[#0d8fa5]"}`}>{choice}</button>)}</div>
+              <div className="mt-5 flex items-center justify-between gap-3">{step > 0 ? <button onClick={() => {setStep(step-1);setSelected(responses[step-1] ?? null)}} className="rounded-xl border border-[#dcebed] px-4 py-3 text-sm font-semibold">{t.back}</button> : <span/>}<button disabled={selected === null} onClick={nextStep} className="rounded-xl bg-[#0d8fa5] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{step === t.question.length-1 ? t.finish : t.next}</button></div>
+            </div>}
+            <p className="mt-6 border-t border-[#edf2f4] pt-4 text-xs leading-5 text-[#7b929e]">{t.note}</p>
+          </section>
+          <section id="ask" className="scroll-mt-24 rounded-2xl border border-[#dcebed] bg-white p-6 sm:p-7">
+            <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e9f8fa] text-[#0d8fa5]"><MessageCircleQuestion size={21}/></span><h2 className="text-xl font-bold">{t.guidance}</h2></div>
+            <p className="mt-3 text-sm leading-6 text-[#6b8490]">{t.guidanceInfo}</p>
+            <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder={t.placeholder} className="mt-5 min-h-32 w-full resize-y rounded-xl border border-[#dcebed] bg-[#fbfdfd] p-4 text-sm outline-none focus:border-[#0d8fa5]" />
+            <button disabled={!prompt.trim() || asking} onClick={askMindCare} className="mt-3 w-full rounded-xl bg-[#17324a] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{asking ? (language === "FR" ? "Réponse en cours…" : "Thinking…") : t.ask}</button>
+            {askError && <p role="alert" className="mt-3 text-sm text-red-700">{askError}</p>}{answer && <div className="mt-5 rounded-xl border border-[#dcebed] bg-[#f3fafb] p-4" aria-live="polite"><p className="whitespace-pre-wrap text-sm leading-6 text-[#607883]">{answer}</p></div>}
+            <div id="privacy" className="mt-6 flex scroll-mt-24 items-start gap-3 rounded-xl bg-[#f3f8f9] p-4"><ShieldCheck size={19} className="mt-0.5 shrink-0 text-[#0d8fa5]"/><div><p className="text-sm font-bold">{t.privacy}</p><p className="mt-1 text-xs leading-5 text-[#6b8490]">{t.privacyInfo}</p></div></div>
+          </section>
+        </div>
       </div>
     </main>
   )
-}
-
-function Metric({ icon: Icon, label, value, suffix, trend, color }: { icon: typeof HeartPulse; label: string; value: string; suffix: string; trend: string; color: string }) {
-  const colors: Record<string, string> = { teal: "bg-[#e9f8fa] text-[#0d8fa5]", blue: "bg-[#edf3ff] text-[#5275c5]", purple: "bg-[#f3efff] text-[#8064c2]", green: "bg-[#eaf8f1] text-[#26936f]" }
-  return <div className="rounded-2xl border border-[#dfe9ee] bg-white p-5"><span className={`grid size-9 place-items-center rounded-lg ${colors[color]}`}><Icon className="size-[18px]" /></span><p className="mt-4 text-xs font-semibold text-[#81959f]">{label}</p><p className="mt-1 text-2xl font-bold tracking-[-.04em]">{value}<span className="text-sm font-semibold text-[#81959f]">{suffix}</span></p><p className="mt-2 text-[10px] font-bold text-[#26936f]">{trend}</p></div>
 }
