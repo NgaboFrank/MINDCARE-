@@ -89,11 +89,7 @@ export default function Page() {
       <header className="sticky top-0 z-20 border-b border-[#0d4a8a] bg-[#0d4a8a] text-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
           <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight">mindcare<span className="-ml-2 text-white">.</span></a>
-          <nav className="hidden items-center gap-6 text-sm font-semibold text-white/85 sm:flex" aria-label="Main navigation">
-            <button onClick={() => navigate("home")} className="hover:text-white">{t.home}</button>
-            <button onClick={() => navigate("checkin")} className="hover:text-white">{t.assessment}</button>
-            <button onClick={() => navigate("ask")} className="hover:text-white">{t.help}</button>
-          </nav>
+
           <div className="flex items-center gap-2">
             <div className="relative"><button type="button" aria-label={t.language} aria-expanded={languageOpen} aria-haspopup="menu" onClick={() => setLanguageOpen(!languageOpen)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-white hover:bg-white/15">{language}<ChevronDown size={15} className={`transition-transform ${languageOpen?"rotate-180":""}`}/></button>{languageOpen && <div role="menu" aria-label={t.language} className="absolute right-0 top-full z-40 mt-2 w-40 overflow-hidden rounded-xl border border-[#dce5ee] bg-white py-1 text-[#34465b] shadow-xl">{(["EN","FR"] as Language[]).map(code=><button type="button" role="menuitemradio" aria-checked={language===code} key={code} onClick={()=>chooseLanguage(code)} className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold hover:bg-[#edf4fb] ${language===code?"bg-[#e8f1fb] text-[#0d4a8a]":""}`}>{code==="EN"?"English":"Français"}{language===code && <Check size={16}/>}</button>)}</div>}</div>
             <button type="button" className="rounded-lg p-2 text-white hover:bg-white/15" aria-label={menuOpen ? t.close : t.menu} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22}/> : <Menu size={22}/>}</button>
