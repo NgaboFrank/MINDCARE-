@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useMindCareLanguage } from "@/lib/use-mindcare-language"
 import { generateLocalizedGuidance } from "@/lib/assessment-engine"
 import {
   Activity,
@@ -47,7 +48,7 @@ const translations: Record<string, { FR: string; RW: string }> = {"Ask a wellbei
 export default function Page() {
   const [mobileNav, setMobileNav] = useState(false)
   const [active, setActive] = useState("Overview")
-  const [language, setLanguage] = useState<"EN" | "FR" | "RW">("EN")
+  const [language, setLanguage] = useMindCareLanguage()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [prompt, setPrompt] = useState("")
