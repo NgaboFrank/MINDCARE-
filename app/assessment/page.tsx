@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useMindCareLanguage } from "@/lib/use-mindcare-language"
 import Link from "next/link"
 import { ArrowLeft, ArrowRight, CheckCircle2, HeartPulse, ShieldCheck } from "lucide-react"
 
@@ -39,7 +40,7 @@ function severity(score:number, scale:Scale):number {
 }
 
 export default function AssessmentPage(){
- const [language,setLanguage]=useState<Language>("RW")
+ const [language,setLanguage]=useMindCareLanguage()
  const [responses,setResponses]=useState<Record<string,number>>({})
  const [index,setIndex]=useState(0)
  const [impact,setImpact]=useState<number|null>(null)
