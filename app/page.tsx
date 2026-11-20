@@ -52,7 +52,15 @@ export default function Page() {
   useEffect(() => {
     const formatDate = () => {
       const locale = language === "RW" ? "rw-RW" : language === "FR" ? "fr-FR" : "en-US"
-      setToday(new Intl.DateTimeFormat(locale, { timeZone: "Africa/Kigali", weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date()))
+      if (language === "RW") {
+        const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Kigali", weekday: "long", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date())
+        const get = (type: string) => parts.find(part => part.type === type)?.value ?? ""
+        const weekdays: Record<string,string> = { Sunday:"Ku Cyumweru", Monday:"Ku wa Mbere", Tuesday:"Ku wa Kabiri", Wednesday:"Ku wa Gatatu", Thursday:"Ku wa Kane", Friday:"Ku wa Gatanu", Saturday:"Ku wa Gatandatu" }
+        const months = ["Mutarama","Gashyantare","Werurwe","Mata","Gicurasi","Kamena","Nyakanga","Kanama","Nzeri","Ukwakira","Ugushyingo","Ukuboza"]
+        setToday(`${weekdays[get("weekday")]}, ${get("day")} ${months[Number(get("month"))-1]} ${get("year")}`)
+      } else {
+        setToday(new Intl.DateTimeFormat(locale, { timeZone: "Africa/Kigali", weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date()))
+      }
     }
     formatDate()
     const timer = window.setInterval(formatDate, 60_000)
