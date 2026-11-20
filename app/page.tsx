@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useMindCareLanguage } from "@/lib/use-mindcare-language"
 import { generateLocalizedGuidance } from "@/lib/assessment-engine"
 import {
@@ -47,6 +47,16 @@ const translations: Record<string, { FR: string; RW: string }> = {"Ask a wellbei
 
 export default function Page() {
   const [mobileNav, setMobileNav] = useState(false)
+  const [today, setToday] = useState("")
+  useEffect(() => {
+    const formatDate = () => {
+      const locale = language === "RW" ? "rw-RW" : language === "FR" ? "fr-FR" : "en-US"
+      setToday(new Intl.DateTimeFormat(locale, { timeZone: "Africa/Kigali", weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date()))
+    }
+    formatDate()
+    const timer = window.setInterval(formatDate, 60_000)
+    return () => window.clearInterval(timer)
+  }, [language])
   const [active, setActive] = useState("Overview")
   const [language, setLanguage] = useMindCareLanguage()
   const [showNotifications, setShowNotifications] = useState(false)
@@ -79,7 +89,7 @@ export default function Page() {
 
         <section className="min-w-0 flex-1 lg:ml-[252px]"><div className="absolute right-5 top-4 z-10 sm:right-8 lg:right-10"><select aria-label="Switch language" value={language} onChange={(e) => setLanguage(e.target.value as "EN" | "FR" | "RW")} className="cursor-pointer rounded-md border border-[#dfe9ee] bg-white px-2 py-1.5 text-xs font-bold text-[#0D4A8A] outline-none"><option value="EN">EN</option><option value="FR">FR</option><option value="RW">RW</option></select></div><div className="flex justify-end px-5 pt-4 lg:hidden"><button type="button" onClick={() => setMobileNav(true)} aria-label="Open navigation" className="rounded-lg bg-[#0D4A8A] p-2 text-white"><Menu className="size-5"/></button></div>
 
-          <div className="mx-auto max-w-[1360px] px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold text-[#8498a3]">{tr("Tuesday, November 4, 2026")}</p><h1 className="mt-1 text-2xl font-bold tracking-[-.04em] sm:text-3xl">{tr("Good morning, Alex")}</h1><p className="mt-2 text-sm text-[#708691]">{tr("A clear view of your wellbeing, one small step at a time.")}</p></div><button onClick={() => { window.location.href = "/assessment" }} className="flex w-fit items-center gap-2 rounded-xl bg-[#0D4A8A] px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(13,74,138,.18)] hover:bg-[#093B70]"><Sparkles className="size-4" />{tr("Start PHQ-9 / GAD-7 assessment")}</button></div>
+          <div className="mx-auto max-w-[1360px] px-5 py-7 sm:px-8 lg:px-10"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold text-[#8498a3]">{today}</p><h1 className="mt-1 text-2xl font-bold tracking-[-.04em] sm:text-3xl">{tr("Good morning, Alex")}</h1><p className="mt-2 text-sm text-[#708691]">{tr("A clear view of your wellbeing, one small step at a time.")}</p></div><button onClick={() => { window.location.href = "/assessment" }} className="flex w-fit items-center gap-2 rounded-xl bg-[#0D4A8A] px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(13,74,138,.18)] hover:bg-[#093B70]"><Sparkles className="size-4" />{tr("Start PHQ-9 / GAD-7 assessment")}</button></div>
 
             <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Metric icon={HeartPulse} label={tr("Wellbeing score")} value="72" suffix="/100" trend={tr("+8% this month")} color="teal" /><Metric icon={Target} label={tr("Check-in streak")} value="12" suffix={tr(" days")} trend={tr("Best: 18 days")} color="blue" /><Metric icon={CalendarDays} label={tr("Next reflection")} value={tr("Thu")} suffix=" · 9:00 AM" trend={tr("In 2 days")} color="purple" /><Metric icon={CheckCircle2} label={tr("Weekly progress")} value="4" suffix=" / 5" trend={tr("Almost there")} color="green" /></div>
 
