@@ -36,7 +36,7 @@ const copy = {
 
 function severity(score:number, scale:Scale):number {
  if (scale==="PHQ-9") return score<5?0:score<10?1:score<15?2:score<20?3:4
- return score<5?0:score<10?1:score<15?2:4
+ return score<5?0:score<10?1:score<15?2:3
 }
 
 export default function AssessmentPage(){
