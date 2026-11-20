@@ -88,11 +88,11 @@ export default function AssessmentPage(){
            <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold text-[#0D4A8A]">{r.scale} · {r.title}</p><span className="text-sm font-bold text-[#0D4A8A]">{r.score}/{r.max}</span></div>
            <h3 className="mt-4 text-2xl font-extrabold text-[#17324a]">{answer}</h3>
            <p className="mt-3 text-sm leading-6 text-[#4E6480]">{explanation} {language==="RW"?"Ibi ni ibimenyetso byagaragajwe n'isuzuma, si icyemezo cy'uburwayi.":language==="FR"?"Ce dépistage ne constitue pas un diagnostic médical.":"This screening result is not a medical diagnosis."}</p>
-           <div className="mt-4 border-t border-[#D5E4F6] pt-4"><p className="text-sm font-bold text-[#17324a]">{language==="RW"?"Icyo wakora":language==="FR"?"Que faire ensuite":"What to do next"}</p><p className="mt-2 text-sm leading-6 text-[#4E6480]">{nextStep}</p></div>
+           <div className="mt-4 border-t border-[#D5E4F6] pt-4"><p className="text-sm font-bold text-[#17324a]">{language==="RW"?"Icyo wakora":language==="FR"?"Que faire ensuite":"What to do next"}</p><p className="mt-2 text-sm leading-6 text-[#4E6480]">{nextStep}</p>{r.scale==="PHQ-9" && responses.P9!==undefined && responses.P9>0 && <p role="alert" className="mt-3 text-sm leading-6 font-semibold text-[#17324a]">{t.urgent}</p>}</div>
          </div>
        })}
       </div>
-      {responses.P9!==undefined && responses.P9>0 && <div role="alert" className="mt-5 rounded-xl border border-[#e9c7c7] bg-[#fff7f7] p-5 text-sm leading-6 text-[#793b3b]">{t.urgent}</div>}
+      
       <div className="mt-6 flex flex-wrap gap-3"><button type="button" onClick={reset} className="rounded-xl bg-[#17324a] px-5 py-3 text-sm font-bold text-white">{t.startAgain}</button><button type="button" onClick={()=>{reset();setScale(null)}} className="rounded-xl border border-[#D5E4F6] px-5 py-3 text-sm font-bold">{language==="RW"?"Hitamo irindi suzuma":language==="FR"?"Choisir un autre test":"Choose another assessment"}</button></div>
     </>}
     <div className="mt-8 flex items-start gap-2 border-t border-[#e8eff1] pt-5 text-xs leading-5 text-[#748996]"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#0D4A8A]"/>{t.privacy}</div>
