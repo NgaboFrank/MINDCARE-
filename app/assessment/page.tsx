@@ -43,7 +43,6 @@ export default function AssessmentPage(){
  const [language,setLanguage]=useMindCareLanguage()
  const [scale,setScale]=useState<Scale|null>(null)
  const [responses,setResponses]=useState<Record<string,number>>({})
- const [scale,setScale]=useState<Scale|null>(null)
  const [index,setIndex]=useState(0)
  const [impact,setImpact]=useState<number|null>(null)
  const [done,setDone]=useState(false)
@@ -56,7 +55,6 @@ export default function AssessmentPage(){
   gad:questions.filter(q=>q.scale==="GAD-7").reduce((s,q)=>s+(responses[q.id]??0),0)
  }),[responses])
  const reset=()=>{setResponses({});setIndex(0);setImpact(null);setDone(false)}
- const choose=(chosen:Scale)=>{reset();setScale(chosen)}
  const choose=(selected:Scale)=>{reset();setScale(selected)}
  const next=()=>{if(index<selectedQuestions.length-1)setIndex(i=>i+1);else setDone(true)}
  return <main className="min-h-screen bg-[#f5f8fa] px-4 py-8 text-[#17324a] sm:py-12">
