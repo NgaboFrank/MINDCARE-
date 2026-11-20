@@ -47,6 +47,7 @@ const translations: Record<string, { FR: string; RW: string }> = {"Ask a wellbei
 
 export default function Page() {
   const [mobileNav, setMobileNav] = useState(false)
+  const [language, setLanguage] = useMindCareLanguage()
   const [today, setToday] = useState("")
   useEffect(() => {
     const formatDate = () => {
@@ -58,7 +59,6 @@ export default function Page() {
     return () => window.clearInterval(timer)
   }, [language])
   const [active, setActive] = useState("Overview")
-  const [language, setLanguage] = useMindCareLanguage()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [prompt, setPrompt] = useState("")
