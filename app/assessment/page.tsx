@@ -19,7 +19,7 @@ const questions: Question[] = [
   { id:"P7",scale:"PHQ-9",rw:"Kunanirwa gukurikira ibintu, nko gusoma cyangwa kureba televiziyo.",en:"Trouble concentrating, for example when reading or watching television.",fr:"Difficulté à se concentrer, par exemple en lisant ou en regardant la télévision." },
   { id:"P8",scale:"PHQ-9",rw:"Kugenda cyangwa kuvuga buhoro bidasanzwe, cyangwa kubura umutuzo no guhora ugendagenda.",en:"Moving or speaking unusually slowly, or feeling unusually restless.",fr:"Bouger ou parler anormalement lentement, ou être particulièrement agité(e)." },
   { id:"P9",scale:"PHQ-9",rw:"Ibitekerezo bijyanye no kwigirira nabi cyangwa umutekano wawe.",en:"Thoughts about harming yourself or your personal safety.",fr:"Pensées concernant le fait de vous faire du mal ou votre sécurité." },
-  { id:"G1",scale:"GAD-7",rw:"Guhorana impungenge, guhangayika cyangwa se kudashobora umutima hamwe.",en:"Feeling nervous, anxious, or on edge.",fr:"Se sentir nerveux, anxieux ou à cran." },
+  { id:"G1",scale:"GAD-7",rw:"Guhorana impungenge, guhangayika cyangwa se kudashyira umutima hamwe.",en:"Feeling nervous, anxious, or on edge.",fr:"Se sentir nerveux, anxieux ou à cran." },
   { id:"G2",scale:"GAD-7",rw:"Kudashobora guhagarika ibitekerezo byo kugira ubwoba.",en:"Not being able to stop or control worrying.",fr:"Ne pas pouvoir arrêter ou contrôler ses inquiétudes." },
   { id:"G3",scale:"GAD-7",rw:"Kugira ubwoba bwinshi cyane ku bintu bitandukanye.",en:"Worrying too much about different things.",fr:"Trop s’inquiéter à propos de différentes choses." },
   { id:"G4",scale:"GAD-7",rw:"Kutabasha kuruhuka.",en:"Trouble relaxing.",fr:"Avoir du mal à se détendre." },
