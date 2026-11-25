@@ -41,7 +41,7 @@ function severity(score:number, scale:Scale):number {
 
 export default function AssessmentPage(){
  const [language,setLanguage]=useMindCareLanguage()
- const [scale,setScale]=useState<Scale|null>(null)
+ const [scale,setScale]=useState<Scale|null>(()=>{if(typeof window==="undefined")return null;const s=new URLSearchParams(window.location.search).get("scale");return s==="PHQ-9"||s==="GAD-7"?s:null})
  const [responses,setResponses]=useState<Record<string,number>>({})
  const [index,setIndex]=useState(0)
  const [impact,setImpact]=useState<number|null>(null)
